@@ -1,0 +1,6 @@
+build
+credentials
+Makefile
+*.cmake
+CMakeFiles
+CMakeCache.txt
