@@ -36,6 +36,7 @@ file(GLOB IOT_PHIDGET_SOURCES "*.c")
 
 set ( PROJECT_LINK_LIBS libphidget21.so libdl.so libssl.so libcrypto.so )
 project (iot-phidget)
+file(MAKE_DIRECTORY build)
 include_directories(${AWS_IOT_INCLUDES} ${MQTT_INCLUDES} ${EXTRA_INCLUDES})
 add_executable(build/iot-phidget ${IOT_PHIDGET_SOURCES} ${AWS_IOT_SOURCES} ${MQTT_SOURCES})
 target_link_libraries(build/iot-phidget ${PROJECT_LINK_LIBS})
