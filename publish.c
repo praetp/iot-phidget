@@ -6,7 +6,7 @@
 #include "publish.h"
 
 #include <stdint.h>
-#include <inttypes.h>
+#include <string.h>
 #include <inttypes.h>
 
 static void disconnectCallbackHandler(void) {
@@ -25,6 +25,12 @@ static void disconnectCallbackHandler(void) {
 	}
 }
 
+void publishConfigDefault(publishConfig_t *config){
+
+    memset(config, 0, sizeof(*config));
+    config->port = AWS_IOT_MQTT_PORT;
+
+}
 
 bool publishInit(const publishConfig_t *config){
 
@@ -40,7 +46,7 @@ bool publishInit(const publishConfig_t *config){
     connectParams.MQTTVersion = MQTT_3_1_1;
     connectParams.pClientID = "CSDK-test-device";
     connectParams.pHostURL = (char *)config->hostAddress;
-    connectParams.port = AWS_IOT_MQTT_PORT;
+    connectParams.port = config->port;
     connectParams.isWillMsgPresent = false;
     connectParams.pRootCALocation = (char *)config->caFilename;
     connectParams.pDeviceCertLocation = (char *)config->clientCertFilename;
@@ -53,31 +59,41 @@ bool publishInit(const publishConfig_t *config){
     INFO("Connecting...");
     rc = aws_iot_mqtt_connect(&connectParams);
     if (NONE_ERROR != rc) {
-        ERROR("Error(%d) connecting to %s:%d", rc, connectParams.pHostURL, connectParams.port);
+        fprintf(stderr, "Error(%d) connecting to %s:%d", rc, connectParams.pHostURL, connectParams.port);
         return false;
     }
 
     rc = aws_iot_mqtt_autoreconnect_set_status(true);
     if (NONE_ERROR != rc) {
-        ERROR("Unable to set Auto Reconnect to true - %d", rc);
+        fprintf(stderr, "Unable to set Auto Reconnect to true - %d", rc);
         return false;
     }
+
+    return true;
 }
 
 bool publishSingleReflection(void){
 
     IoT_Error_t rc = NONE_ERROR;
     static uint32_t counter;
-    MQTTMessageParams Msg = MQTTMessageParamsDefault;
-    Msg.qos = QOS_1;
+
+    MQTTMessageParams msg = MQTTMessageParamsDefault;
+    msg.qos = QOS_1;
     char payload[64];
     snprintf(payload, sizeof(payload), "{ counter: %"PRIu32"\n}", counter++);
-    Msg.pPayload = (void *) payload;
+    msg.pPayload = (void *) payload;
 
     MQTTPublishParams params = MQTTPublishParamsDefault;
     params.pTopic = "iot/reflections";
+    msg.PayloadLen = strlen(payload) + 1;
+    params.MessageParams = msg;
     rc = aws_iot_mqtt_publish(&params);
+    if (rc != NONE_ERROR){
+        fprintf(stderr, "Could not publish message\n");
+        return false;
+    }
 
+    return true;
 }
 
 void publishDestroy(void){

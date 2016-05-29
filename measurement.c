@@ -38,6 +38,13 @@ static int onSensorChanged(CPhidgetInterfaceKitHandle IFK, void *usrptr, int ind
 
 }
 
+void measurementConfigDefault(measurementConfig_t *config){
+    memset(config, 0, sizeof(*config));
+
+    config->reflectionMeterPort = 0;
+    config->reflectionMeterThreshold = 200;
+}
+
 bool validateConfig(const measurementConfig_t *config){
 
     if (config == NULL){

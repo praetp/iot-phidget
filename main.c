@@ -1,7 +1,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <signal.h>
+#include <getopt.h>
+#include <ctype.h>
+#include <unistd.h>
 #include "measurement.h"
+#include "publish.h"
 
 static bool running = true;
 
@@ -28,19 +32,67 @@ static void sigHandler(int signum){
 	}
 }
 
+bool parseOptions(int argc, char **argv, measurementConfig_t *measurementConfig, publishConfig_t *publishConfig){
+    int opt;
+
+    while (-1 != (opt = getopt(argc, argv, "h:p:a:k:c:t:i"))) {
+        switch (opt) {
+            case 'h':
+                publishConfig->hostAddress = optarg;
+                break;
+            case 'p':
+                publishConfig->port = atoi(optarg);
+                break;
+            case 'a':
+                publishConfig->caFilename = optarg;
+                break;
+            case 'k':
+                publishConfig->clientKeyFilename = optarg;
+                break;
+            case 'c':
+                publishConfig->clientCertFilename = optarg;
+                break;
+            case 't':
+                measurementConfig->reflectionMeterThreshold = atoi(optarg);
+                measurementConfig->reflectionMeterPort = atoi(optarg);
+                break;
+            case '?':
+                if (isprint(optopt)) {
+                    fprintf(stderr,"Unknown option `-%c'.", optopt);
+                } else {
+                    fprintf(stderr, "Unknown option character `\\x%x'.", optopt);
+                }
+                return false;
+            default:
+                fprintf(stderr, "Error in command line argument parsing");
+                return false;
+        }
+    }
+
+    return true;
+}
+
+
 int main(int argc, char **argv){
 
     
-    if (publishInit() == false){
-        fprintf(stderr, "Could not init publish\r\n");
+    publishConfig_t publishConfig;
+    publishConfigDefault(&publishConfig);
+
+    measurementConfig_t measurementConfig;
+    measurementConfigDefault(&measurementConfig);
+    measurementConfig.onReflection = onReflection;
+
+    if (parseOptions(argc, argv, &measurementConfig, &publishConfig) == false){
+        fprintf(stderr, "Could not parse options\r\n");
         return EXIT_FAILURE;
     }
 
-    const measurementConfig_t measurementConfig = {
-        .reflectionMeterPort = 0,
-        .reflectionMeterThreshold = 200,
-        .onReflection = onReflection 
-    };
+
+    if (publishInit(&publishConfig) == false){
+        fprintf(stderr, "Could not init publish\r\n");
+        return EXIT_FAILURE;
+    }
 
     if (measurementInit(&measurementConfig) == false){
         fprintf(stderr, "Could not init measure\r\n");
@@ -60,5 +112,6 @@ int main(int argc, char **argv){
     measurementDestroy();
 
 
+    return 0;
 
-};
+}

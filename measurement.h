@@ -13,5 +13,7 @@ typedef struct {
 
 bool measurementInit(const measurementConfig_t *config);
 
+void measurementConfigDefault(measurementConfig_t *config);
+
 void measurementDestroy(void);
 #endif

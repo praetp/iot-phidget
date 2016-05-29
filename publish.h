@@ -3,11 +3,14 @@
 #include <stdbool.h>
 typedef struct {
         const char *hostAddress;
+        unsigned short port;
 	const char *caFilename;
 	const char *clientCertFilename;
 	const char *clientKeyFilename;
 } publishConfig_t;
 
+
+void publishConfigDefault(publishConfig_t *config);
 
 bool publishInit(const publishConfig_t *config);
 
