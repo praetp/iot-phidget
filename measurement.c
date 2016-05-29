@@ -1,6 +1,7 @@
 #include "measurement.h"
 #include <phidget21.h>
 #include <stdio.h>
+#include <string.h>
 
 static CPhidgetInterfaceKitHandle _ifKit;
 static measurementConfig_t  _config;
