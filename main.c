@@ -11,6 +11,7 @@ static bool running = true;
 
 static void onReflection(void){
 
+    fprintf(stdout, "Reflection detected");
     if (publishSingleReflection() == false){
         fprintf(stderr, "Could not publish single reflection\r\n");
     }

@@ -6,23 +6,19 @@
 static CPhidgetInterfaceKitHandle _ifKit;
 static measurementConfig_t  _config;
 static bool _currentReflectionState;
-static const int HYSTERESIS = 100;
 
 static void processReflectionSensor1102(int value){
+    printf("New value: %d\n", value);
     if (value < _config.reflectionMeterThreshold){
         /* we have reflection */
         if (_currentReflectionState == false){
             /* state change ! */
             _currentReflectionState = true;
             _config.onReflection();
-        } else {
-            if (_config.reflectionMeterThreshold + HYSTERESIS < value){
-                _currentReflectionState = false;
-            }
         }
-        
-
-    }
+    } else {
+        _currentReflectionState = false;
+    }   
 }
 
 
@@ -33,7 +29,7 @@ static int onSensorChanged(CPhidgetInterfaceKitHandle IFK, void *usrptr, int ind
         processReflectionSensor1102(value);
     }
     
-    printf("Sensor: %d > Value: %d\n", index, value);
+//    printf("Sensor: %d > Value: %d\n", index, value);
 
     return 0;
 
@@ -92,7 +88,7 @@ bool measurementInit(const measurementConfig_t *config){
         fprintf(stderr, "Problem waiting for attachment: %s\n", err);
         return false;
     }
-    CPhidgetInterfaceKit_setSensorChangeTrigger(_ifKit, config->reflectionMeterPort, config->reflectionMeterThreshold);
+    CPhidgetInterfaceKit_setSensorChangeTrigger(_ifKit, config->reflectionMeterPort, 50);
     CPhidgetInterfaceKit_setRatiometric(_ifKit, true);
     CPhidgetInterfaceKit_set_OnSensorChange_Handler (_ifKit, onSensorChanged, NULL);
     

@@ -6,6 +6,7 @@
 #include "publish.h"
 
 #include <stdint.h>
+#include <time.h>
 #include <string.h>
 #include <inttypes.h>
 
@@ -51,7 +52,7 @@ bool publishInit(const publishConfig_t *config){
     connectParams.pRootCALocation = (char *)config->caFilename;
     connectParams.pDeviceCertLocation = (char *)config->clientCertFilename;
     connectParams.pDevicePrivateKeyLocation = (char *)config->clientKeyFilename;
-    connectParams.mqttCommandTimeout_ms = 2000;
+    connectParams.mqttCommandTimeout_ms = 15000;
     connectParams.tlsHandshakeTimeout_ms = 5000;
     connectParams.isSSLHostnameVerify = true; // ensure this is set to true for production
     connectParams.disconnectHandler = disconnectCallbackHandler;
@@ -74,6 +75,7 @@ bool publishInit(const publishConfig_t *config){
 
 bool publishSingleReflection(void){
 
+    printf("%d publishing\n", time(NULL));
     IoT_Error_t rc = NONE_ERROR;
     static uint32_t counter;
 
@@ -89,9 +91,11 @@ bool publishSingleReflection(void){
     params.MessageParams = msg;
     rc = aws_iot_mqtt_publish(&params);
     if (rc != NONE_ERROR){
-        fprintf(stderr, "Could not publish message\n");
+        fprintf(stderr, "%d Could not publish message (rc=%d)\n", time(NULL), rc);
         return false;
     }
+    printf("message published (%s) !\n", payload);
+    aws_iot_mqtt_yield(100);
 
     return true;
 }
