@@ -4,6 +4,8 @@
 #include <getopt.h>
 #include <ctype.h>
 #include <unistd.h>
+#include <string.h>
+#include <errno.h>
 #include "measurement.h"
 #include "publish.h"
 
@@ -11,7 +13,7 @@ static bool running = true;
 
 static void onReflection(void){
 
-    fprintf(stdout, "Reflection detected");
+    fprintf(stdout, "Reflection detected\n");
     if (publishSingleReflection() == false){
         fprintf(stderr, "Could not publish single reflection\r\n");
     }
@@ -33,11 +35,14 @@ static void sigHandler(int signum){
 	}
 }
 
-bool parseOptions(int argc, char **argv, measurementConfig_t *measurementConfig, publishConfig_t *publishConfig){
+bool parseOptions(int argc, char **argv, measurementConfig_t *measurementConfig, publishConfig_t *publishConfig, bool *daemon){
     int opt;
 
-    while (-1 != (opt = getopt(argc, argv, "h:p:a:k:c:t:i"))) {
+    while (-1 != (opt = getopt(argc, argv, "dh:p:a:k:c:t:i"))) {
         switch (opt) {
+            case 'd':
+                *daemon = true;
+                break;
             case 'h':
                 publishConfig->hostAddress = optarg;
                 break;
@@ -83,10 +88,18 @@ int main(int argc, char **argv){
     measurementConfig_t measurementConfig;
     measurementConfigDefault(&measurementConfig);
     measurementConfig.onReflection = onReflection;
+    bool daemonize = false;
 
-    if (parseOptions(argc, argv, &measurementConfig, &publishConfig) == false){
+    if (parseOptions(argc, argv, &measurementConfig, &publishConfig, &daemonize) == false){
         fprintf(stderr, "Could not parse options\r\n");
         return EXIT_FAILURE;
+    }
+
+    if (daemonize == true){
+        if (daemon(1, 0) < 0){
+            fprintf(stderr, "Could not daemonize (%s)\r\n", strerror(errno));
+        }
+
     }
 
 
