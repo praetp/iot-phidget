@@ -80,7 +80,7 @@ bool publishSingleReflection(void){
     static uint32_t counter;
 
     MQTTMessageParams msg = MQTTMessageParamsDefault;
-    msg.qos = QOS_1;
+    msg.qos = QOS_0;
     char payload[64];
     snprintf(payload, sizeof(payload), "{ counter: %"PRIu32"\n}", counter++);
     msg.pPayload = (void *) payload;
