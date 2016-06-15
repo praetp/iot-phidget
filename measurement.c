@@ -8,7 +8,7 @@ static measurementConfig_t  _config;
 static bool _currentReflectionState;
 
 static void processReflectionSensor1102(int value){
-    printf("New value: %d\n", value);
+//    printf("New value: %d\n", value);
     if (value < _config.reflectionMeterThreshold){
         /* we have reflection */
         if (_currentReflectionState == false){
