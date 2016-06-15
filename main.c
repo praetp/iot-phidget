@@ -35,13 +35,16 @@ static void sigHandler(int signum){
 	}
 }
 
-bool parseOptions(int argc, char **argv, measurementConfig_t *measurementConfig, publishConfig_t *publishConfig, bool *daemon){
+bool parseOptions(int argc, char **argv, measurementConfig_t *measurementConfig, publishConfig_t *publishConfig, bool *daemon, bool *fake){
     int opt;
 
-    while (-1 != (opt = getopt(argc, argv, "dh:p:a:k:c:t:i"))) {
+    while (-1 != (opt = getopt(argc, argv, "fdh:p:a:k:c:t:i"))) {
         switch (opt) {
             case 'd':
                 *daemon = true;
+                break;
+            case 'f':
+                *fake = true;
                 break;
             case 'h':
                 publishConfig->hostAddress = optarg;
@@ -89,14 +92,15 @@ int main(int argc, char **argv){
     measurementConfigDefault(&measurementConfig);
     measurementConfig.onReflection = onReflection;
     bool daemonize = false;
+    bool fake = false;
 
-    if (parseOptions(argc, argv, &measurementConfig, &publishConfig, &daemonize) == false){
+    if (parseOptions(argc, argv, &measurementConfig, &publishConfig, &daemonize, &fake) == false){
         fprintf(stderr, "Could not parse options\r\n");
         return EXIT_FAILURE;
     }
 
     if (daemonize == true){
-        if (daemon(1, 0) < 0){
+        if (daemon(1, 1) < 0){
             fprintf(stderr, "Could not daemonize (%s)\r\n", strerror(errno));
         }
 
@@ -110,8 +114,9 @@ int main(int argc, char **argv){
 
     if (measurementInit(&measurementConfig) == false){
         fprintf(stderr, "Could not init measure\r\n");
-        return EXIT_FAILURE;
-
+        if (fake == false){
+            return EXIT_FAILURE;
+        }
     } 
 
     struct sigaction sa = { .sa_handler = sigHandler };
@@ -121,6 +126,9 @@ int main(int argc, char **argv){
 
     while (running){
         sleep(1);
+        if (fake == true){
+            onReflection();
+        }
     }
     
     measurementDestroy();
