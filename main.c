@@ -6,17 +6,20 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+#include <pthread.h>
 #include "measurement.h"
 #include "publish.h"
 
 static bool running = true;
+static int reflections;
+static pthread_mutex_t lock;
 
 static void onReflection(void){
 
     fprintf(stdout, "Reflection detected\n");
-    if (publishSingleReflection() == false){
-        fprintf(stderr, "Could not publish single reflection\r\n");
-    }
+    pthread_mutex_lock(&lock);
+    ++reflections;
+    pthread_mutex_unlock(&lock);
 
 }
 
@@ -81,9 +84,9 @@ bool parseOptions(int argc, char **argv, measurementConfig_t *measurementConfig,
     return true;
 }
 
-
 int main(int argc, char **argv){
 
+    setvbuf(stdout, NULL, _IONBF, 0);
     
     publishConfig_t publishConfig;
     publishConfigDefault(&publishConfig);
@@ -106,7 +109,6 @@ int main(int argc, char **argv){
 
     }
 
-
     if (publishInit(&publishConfig) == false){
         fprintf(stderr, "Could not init publish\r\n");
         return EXIT_FAILURE;
@@ -125,14 +127,26 @@ int main(int argc, char **argv){
     sigaction(SIGTERM, &sa, NULL);
 
     while (running){
-        sleep(1);
+        pthread_mutex_lock(&lock);
+        int tosend = reflections;
+        reflections = 0;
+        pthread_mutex_unlock(&lock);
+        
+        for (int i = 0; i < tosend; ++i){
+            fprintf(stdout, "Publishing (%d/%d)\n", i, tosend);
+            if (publishSingleReflection() == false){
+                fprintf(stderr, "Could not publish single reflection\r\n");
+            }
+        }
         if (fake == true){
             onReflection();
         }
+        publishProcess();
+        sleep(1);
     }
     
     measurementDestroy();
-
+    publishDestroy();
 
     return 0;
 

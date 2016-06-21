@@ -29,7 +29,7 @@ static int onSensorChanged(CPhidgetInterfaceKitHandle IFK, void *usrptr, int ind
         processReflectionSensor1102(value);
     }
     
-//    printf("Sensor: %d > Value: %d\n", index, value);
+    fprintf(stdout, "Sensor: %d > Value: %d\n", index, value);
 
     return 0;
 

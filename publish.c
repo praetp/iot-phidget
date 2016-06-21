@@ -75,6 +75,10 @@ bool publishInit(const publishConfig_t *config){
     return true;
 }
 
+void publishProcess(void){
+    aws_iot_mqtt_yield(100);
+}
+
 bool publishSingleReflection(void){
 
     printf("%d publishing\n", time(NULL));
@@ -82,7 +86,7 @@ bool publishSingleReflection(void){
     static uint32_t counter;
 
     MQTTMessageParams msg = MQTTMessageParamsDefault;
-    msg.qos = QOS_0;
+    msg.qos = QOS_1;
     char payload[64];
     snprintf(payload, sizeof(payload), "{ counter: %"PRIu32"\n}", counter++);
     msg.pPayload = (void *) payload;
@@ -92,6 +96,7 @@ bool publishSingleReflection(void){
     msg.PayloadLen = strlen(payload) + 1;
     params.MessageParams = msg;
     int retryCounter = 0;
+
     do {
         rc = aws_iot_mqtt_publish(&params);
         if (rc != 0){
@@ -100,6 +105,7 @@ bool publishSingleReflection(void){
         }
         aws_iot_mqtt_yield(100);
     } while (rc != NONE_ERROR && retryCounter < MAX_RETRIES);
+
     if (rc != NONE_ERROR){
         fprintf(stderr, "%d Could not publish message (rc=%d)\n", time(NULL), rc);
         return false;

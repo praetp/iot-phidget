@@ -16,5 +16,7 @@ bool publishInit(const publishConfig_t *config);
 
 bool publishSingleReflection(void);
 
+void publishProcess(void);
+
 void publishDestroy(void);
 #endif
