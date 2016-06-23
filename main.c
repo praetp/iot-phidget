@@ -142,7 +142,6 @@ int main(int argc, char **argv){
             onReflection();
         }
         publishProcess();
-        sleep(1);
     }
     
     measurementDestroy();

@@ -76,7 +76,7 @@ bool publishInit(const publishConfig_t *config){
 }
 
 void publishProcess(void){
-    aws_iot_mqtt_yield(100);
+    aws_iot_mqtt_yield(1000);
 }
 
 bool publishSingleReflection(void){
@@ -101,6 +101,12 @@ bool publishSingleReflection(void){
         rc = aws_iot_mqtt_publish(&params);
         if (rc != 0){
             fprintf(stderr, "have to retry...\n");
+            rc = aws_iot_mqtt_attempt_reconnect();
+            if(RECONNECT_SUCCESSFUL == rc){
+                fprintf(stderr,"Manual Reconnect Successful\n");
+            }else{
+                fprintf(stderr,"Manual Reconnect Failed - %d\n", rc);
+            }
             ++retryCounter;
         }
         aws_iot_mqtt_yield(100);

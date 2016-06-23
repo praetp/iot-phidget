@@ -97,5 +97,6 @@ bool measurementInit(const measurementConfig_t *config){
 }
 
 void measurementDestroy(void){
-
+    CPhidget_close((CPhidgetHandle)_ifKit);
+    CPhidget_delete((CPhidgetHandle)_ifKit);
 }
