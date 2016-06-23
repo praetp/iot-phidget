@@ -14,7 +14,7 @@ void publishConfigDefault(publishConfig_t *config);
 
 bool publishInit(const publishConfig_t *config);
 
-bool publishSingleReflection(void);
+bool publishReflections(unsigned int count);
 
 void publishProcess(void);
 

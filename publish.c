@@ -47,7 +47,7 @@ bool publishInit(const publishConfig_t *config){
     connectParams.KeepAliveInterval_sec = 10;
     connectParams.isCleansession = true;
     connectParams.MQTTVersion = MQTT_3_1_1;
-    connectParams.pClientID = "CSDK-test-device";
+    connectParams.pClientID = "raspberrypi";
     connectParams.pHostURL = (char *)config->hostAddress;
     connectParams.port = config->port;
     connectParams.isWillMsgPresent = false;
@@ -79,16 +79,13 @@ void publishProcess(void){
     aws_iot_mqtt_yield(1000);
 }
 
-bool publishSingleReflection(void){
+bool publishReflections(unsigned int count){
 
-    printf("%d publishing\n", time(NULL));
     IoT_Error_t rc = NONE_ERROR;
-    static uint32_t counter;
-
     MQTTMessageParams msg = MQTTMessageParamsDefault;
     msg.qos = QOS_1;
     char payload[64];
-    snprintf(payload, sizeof(payload), "{ counter: %"PRIu32"\n}", counter++);
+    snprintf(payload, sizeof(payload), "{ \"reflections\": %u}", count);
     msg.pPayload = (void *) payload;
 
     MQTTPublishParams params = MQTTPublishParamsDefault;
@@ -96,17 +93,20 @@ bool publishSingleReflection(void){
     msg.PayloadLen = strlen(payload) + 1;
     params.MessageParams = msg;
     int retryCounter = 0;
+    printf("publishing at %d (%s)\n", time(NULL), payload);
 
     do {
         rc = aws_iot_mqtt_publish(&params);
         if (rc != 0){
             fprintf(stderr, "have to retry...\n");
+/*
             rc = aws_iot_mqtt_attempt_reconnect();
             if(RECONNECT_SUCCESSFUL == rc){
                 fprintf(stderr,"Manual Reconnect Successful\n");
             }else{
                 fprintf(stderr,"Manual Reconnect Failed - %d\n", rc);
             }
+*/
             ++retryCounter;
         }
         aws_iot_mqtt_yield(100);

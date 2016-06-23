@@ -11,7 +11,7 @@
 #include "publish.h"
 
 static bool running = true;
-static int reflections;
+static unsigned int reflections;
 static pthread_mutex_t lock;
 
 static void onReflection(void){
@@ -128,15 +128,12 @@ int main(int argc, char **argv){
 
     while (running){
         pthread_mutex_lock(&lock);
-        int tosend = reflections;
+        unsigned int count = reflections;
         reflections = 0;
         pthread_mutex_unlock(&lock);
         
-        for (int i = 0; i < tosend; ++i){
-            fprintf(stdout, "Publishing (%d/%d)\n", i, tosend);
-            if (publishSingleReflection() == false){
-                fprintf(stderr, "Could not publish single reflection\r\n");
-            }
+        if (publishReflections(count) == false){
+            fprintf(stderr, "Could not publish single reflection\r\n");
         }
         if (fake == true){
             onReflection();
