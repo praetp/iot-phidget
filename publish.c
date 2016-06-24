@@ -75,8 +75,8 @@ bool publishInit(const publishConfig_t *config){
     return true;
 }
 
-void publishProcess(void){
-    aws_iot_mqtt_yield(1000);
+void publishProcess(int timeout){
+    aws_iot_mqtt_yield(timeout);
 }
 
 bool publishReflections(unsigned int count){

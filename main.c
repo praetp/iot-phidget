@@ -13,6 +13,7 @@
 static bool running = true;
 static unsigned int reflections;
 static pthread_mutex_t lock;
+static const int PUBLISH_INTERVAL_MS = 10000;
 
 static void onReflection(void){
 
@@ -132,13 +133,15 @@ int main(int argc, char **argv){
         reflections = 0;
         pthread_mutex_unlock(&lock);
         
-        if (publishReflections(count) == false){
-            fprintf(stderr, "Could not publish single reflection\r\n");
+        if (count > 0){
+            if (publishReflections(count) == false){
+                fprintf(stderr, "Could not publish single reflection\r\n");
+            }
         }
         if (fake == true){
             onReflection();
         }
-        publishProcess();
+        publishProcess(PUBLISH_INTERVAL_MS);
     }
     
     measurementDestroy();
