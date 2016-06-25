@@ -35,7 +35,7 @@ file(GLOB IOT_PHIDGET_SOURCES "*.c")
 
 
 set ( PROJECT_LINK_LIBS libphidget21.so libdl.so libssl.so libcrypto.so )
-set(CMAKE_C_FLAGS "-g -Wall -std=c11")
+set(CMAKE_C_FLAGS "-g -Wall -Wextra -std=c11")
 project (iot-phidget)
 file(MAKE_DIRECTORY build)
 include_directories(${AWS_IOT_INCLUDES} ${MQTT_INCLUDES} ${EXTRA_INCLUDES})
