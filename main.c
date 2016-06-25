@@ -13,7 +13,7 @@
 static bool running = true;
 static unsigned int reflections;
 static pthread_mutex_t lock;
-static const int PUBLISH_INTERVAL_MS = 10000;
+static const int PUBLISH_INTERVAL_MS = 1000;
 
 static void onReflection(void){
 

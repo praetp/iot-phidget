@@ -79,8 +79,16 @@ void publishProcess(int timeout){
     aws_iot_mqtt_yield(timeout);
 }
 
+static const char *getTimestampString(char *buf, size_t buflen){
+    time_t now;
+    time(&now);
+    strftime(buf, buflen, "%Y-%m-%dT%H:%M:%SZ", gmtime(&now));
+    return buf;
+}
+
 bool publishReflections(unsigned int count){
 
+    char timestrbuf[32];
     IoT_Error_t rc = NONE_ERROR;
     MQTTMessageParams msg = MQTTMessageParamsDefault;
     msg.qos = QOS_1;
@@ -93,7 +101,8 @@ bool publishReflections(unsigned int count){
     msg.PayloadLen = strlen(payload) + 1;
     params.MessageParams = msg;
     int retryCounter = 0;
-    printf("publishing at %d (%s)\n", time(NULL), payload);
+    getTimestampString(timestrbuf, sizeof(timestrbuf));
+    printf("publishing at %s (%s)\n", timestrbuf, payload);
 
     do {
         rc = aws_iot_mqtt_publish(&params);
@@ -113,7 +122,7 @@ bool publishReflections(unsigned int count){
     } while (rc != NONE_ERROR && retryCounter < MAX_RETRIES);
 
     if (rc != NONE_ERROR){
-        fprintf(stderr, "%d Could not publish message (rc=%d)\n", time(NULL), rc);
+        fprintf(stderr, "%s Could not publish message (rc=%d)\n", timestrbuf, rc);
         return false;
     }
     printf("message published (%s) !\n", payload);
