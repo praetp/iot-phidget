@@ -6,11 +6,12 @@
 #include "publish.h"
 
 #include <stdint.h>
+#include <unistd.h>
 #include <time.h>
 #include <string.h>
 #include <inttypes.h>
 
-static const int MAX_RETRIES = 5;
+static const int MAX_RETRIES = 25;
 
 static void disconnectCallbackHandler(void) {
 	fprintf(stderr,"MQTT Disconnect\n");
@@ -54,7 +55,7 @@ bool publishInit(const publishConfig_t *config){
     connectParams.pRootCALocation = (char *)config->caFilename;
     connectParams.pDeviceCertLocation = (char *)config->clientCertFilename;
     connectParams.pDevicePrivateKeyLocation = (char *)config->clientKeyFilename;
-    connectParams.mqttCommandTimeout_ms = 15000;
+    connectParams.mqttCommandTimeout_ms = 5000;
     connectParams.tlsHandshakeTimeout_ms = 5000;
     connectParams.isSSLHostnameVerify = true; // ensure this is set to true for production
     connectParams.disconnectHandler = disconnectCallbackHandler;
@@ -108,15 +109,14 @@ bool publishReflections(unsigned int count){
         rc = aws_iot_mqtt_publish(&params);
         if (rc != 0){
             fprintf(stderr, "have to retry...\n");
-/*
             rc = aws_iot_mqtt_attempt_reconnect();
             if(RECONNECT_SUCCESSFUL == rc){
                 fprintf(stderr,"Manual Reconnect Successful\n");
             }else{
                 fprintf(stderr,"Manual Reconnect Failed - %d\n", rc);
             }
-*/
             ++retryCounter;
+            sleep(5);
         }
         aws_iot_mqtt_yield(100);
     } while (rc != NONE_ERROR && retryCounter < MAX_RETRIES);
