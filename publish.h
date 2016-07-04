@@ -16,7 +16,7 @@ bool publishInit(const publishConfig_t *config);
 
 bool publishReflections(unsigned int count);
 
-void publishProcess(int timeout);
+void publishProcess(unsigned int timeout_s);
 
 void publishDestroy(void);
 #endif

@@ -9,7 +9,7 @@ static bool _currentReflectionState;
 
 static void processReflectionSensor1102(int value){
 //    printf("New value: %d\n", value);
-    if (value < _config.reflectionMeterThreshold){
+    if ((unsigned int)value < _config.reflectionMeterThreshold){
         /* we have reflection */
         if (_currentReflectionState == false){
             /* state change ! */
@@ -25,11 +25,14 @@ static void processReflectionSensor1102(int value){
 static int onSensorChanged(CPhidgetInterfaceKitHandle IFK, void *usrptr, int index, int value)
 
 {
-    if (index == _config.reflectionMeterPort){
+    (void)IFK;
+    (void)usrptr;
+
+    if ((unsigned int)index == _config.reflectionMeterPort){
         processReflectionSensor1102(value);
     }
     
-    fprintf(stdout, "Sensor: %d > Value: %d\n", index, value);
+//    fprintf(stdout, "Sensor: %d > Value: %d\n", index, value);
 
     return 0;
 
@@ -48,11 +51,11 @@ bool validateConfig(const measurementConfig_t *config){
         return false;
     }
 
-    if (config->reflectionMeterPort < 0 || config->reflectionMeterPort > 7){
+    if (config->reflectionMeterPort > 7){
         return false;
     }
 
-    if (config->reflectionMeterThreshold < 0 || config->reflectionMeterThreshold > 1000){
+    if (config->reflectionMeterThreshold > 1000){
         return false;
     }
 

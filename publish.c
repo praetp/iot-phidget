@@ -4,6 +4,7 @@
 #include "aws_iot_config.h"
 
 #include "publish.h"
+#include "system.h"
 
 #include <stdint.h>
 #include <unistd.h>
@@ -38,17 +39,23 @@ void publishConfigDefault(publishConfig_t *config){
 
 bool publishInit(const publishConfig_t *config){
 
+    bool retval = false;
     IoT_Error_t rc = NONE_ERROR;
+    const char *clientId = systemGetUniqueDeviceId();
+    if (clientId == NULL){
+        fprintf(stderr, "Could not retrieve system unique identifier for client id\n");
+        return false;
+    }
 
 
-    fprintf(stdout,"\nAWS IoT SDK Version %d.%d.%d-%s\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH, VERSION_TAG);
+    fprintf(stdout,"\nAWS IoT SDK Version %d.%d.%d-%s (clientid=%s)\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH, VERSION_TAG, clientId);
 
     MQTTConnectParams connectParams = MQTTConnectParamsDefault;
 
     connectParams.KeepAliveInterval_sec = 10;
     connectParams.isCleansession = true;
     connectParams.MQTTVersion = MQTT_3_1_1;
-    connectParams.pClientID = "raspberrypi";
+    connectParams.pClientID = (char *)clientId;
     connectParams.pHostURL = (char *)config->hostAddress;
     connectParams.port = config->port;
     connectParams.isWillMsgPresent = false;
@@ -60,30 +67,49 @@ bool publishInit(const publishConfig_t *config){
     connectParams.isSSLHostnameVerify = true; // ensure this is set to true for production
     connectParams.disconnectHandler = disconnectCallbackHandler;
 
+
     fprintf(stdout,"Connecting...");
-    rc = aws_iot_mqtt_connect(&connectParams);
-    if (NONE_ERROR != rc) {
-        fprintf(stderr, "Error(%d) connecting to %s:%d", rc, connectParams.pHostURL, connectParams.port);
-        return false;
-    }
+    do {
+        rc = aws_iot_mqtt_connect(&connectParams);
+        if (NONE_ERROR != rc) {
+            fprintf(stderr, "Error(%d) connecting to %s:%d", rc, connectParams.pHostURL, connectParams.port);
+            retval = false;
+        }
 
-    rc = aws_iot_mqtt_autoreconnect_set_status(true);
-    if (NONE_ERROR != rc) {
-        fprintf(stderr, "Unable to set Auto Reconnect to true - %d", rc);
-        return false;
-    }
+        rc = aws_iot_mqtt_autoreconnect_set_status(true);
+        if (NONE_ERROR != rc) {
+            fprintf(stderr, "Unable to set Auto Reconnect to true - %d", rc);
+            retval = false;
+        }
 
-    return true;
+        retval = true;
+    } while (0);
+
+    free((char *)clientId);
+
+    return retval;
 }
 
-void publishProcess(int timeout){
-    aws_iot_mqtt_yield(timeout);
+void publishProcess(unsigned int timeout){
+    aws_iot_mqtt_yield(timeout * 1000);
 }
 
 static const char *getTimestampString(char *buf, size_t buflen){
     time_t now;
     time(&now);
     strftime(buf, buflen, "%Y-%m-%dT%H:%M:%SZ", gmtime(&now));
+    return buf;
+}
+
+
+static const char *buildPayload(unsigned int reflections, char *buf, size_t buflen){
+
+    snprintf(buf, buflen, 
+        "{"
+            "\"reflections\": %u"
+         "}", 
+        reflections);
+
     return buf;
 }
 
@@ -94,8 +120,7 @@ bool publishReflections(unsigned int count){
     MQTTMessageParams msg = MQTTMessageParamsDefault;
     msg.qos = QOS_1;
     char payload[64];
-    snprintf(payload, sizeof(payload), "{ \"reflections\": %u}", count);
-    msg.pPayload = (void *) payload;
+    msg.pPayload = (void *) buildPayload(count, payload, sizeof(payload));
 
     MQTTPublishParams params = MQTTPublishParamsDefault;
     params.pTopic = "iot/reflections";
@@ -131,6 +156,4 @@ bool publishReflections(unsigned int count){
 }
 
 void publishDestroy(void){
-
-
 }

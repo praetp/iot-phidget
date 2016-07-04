@@ -13,7 +13,8 @@
 static bool running = true;
 static unsigned int reflections;
 static pthread_mutex_t lock;
-static const int PUBLISH_INTERVAL_MS = 1000;
+static const unsigned int PUBLISH_INTERVAL_YIELD_S = 1;
+static const unsigned int DEFAULT_INTERVAL_S = 15 * 60;  
 
 static void onReflection(void){
 
@@ -39,11 +40,26 @@ static void sigHandler(int signum){
 	}
 }
 
-bool parseOptions(int argc, char **argv, measurementConfig_t *measurementConfig, publishConfig_t *publishConfig, bool *daemon, bool *fake){
+static bool parseOptions(int argc, 
+                  char **argv, 
+                  measurementConfig_t *measurementConfig, 
+                  publishConfig_t *publishConfig, 
+                  unsigned int *interval,
+                  bool *daemon, 
+                  bool *fake){
     int opt;
 
     while (-1 != (opt = getopt(argc, argv, "fdh:p:a:k:c:t:i"))) {
         switch (opt) {
+            case 'i':{
+                int tmp = atoi(optarg);
+                if (tmp > 10){
+                    *interval = tmp;
+                } else {
+                    fprintf(stderr, "Invalid interval\n");
+                }
+                break;
+            }
             case 'd':
                 *daemon = true;
                 break;
@@ -87,6 +103,13 @@ bool parseOptions(int argc, char **argv, measurementConfig_t *measurementConfig,
 
 int main(int argc, char **argv){
 
+    unsigned int lastCount = 0;
+    bool daemonize = false;
+    bool fake = false;
+    unsigned int interval = DEFAULT_INTERVAL_S;
+    struct sigaction sa = { .sa_handler = sigHandler };
+    time_t lastPublish = (time_t)0;
+
     setvbuf(stdout, NULL, _IONBF, 0);
     
     publishConfig_t publishConfig;
@@ -95,10 +118,8 @@ int main(int argc, char **argv){
     measurementConfig_t measurementConfig;
     measurementConfigDefault(&measurementConfig);
     measurementConfig.onReflection = onReflection;
-    bool daemonize = false;
-    bool fake = false;
 
-    if (parseOptions(argc, argv, &measurementConfig, &publishConfig, &daemonize, &fake) == false){
+    if (parseOptions(argc, argv, &measurementConfig, &publishConfig, &interval, &daemonize, &fake) == false){
         fprintf(stderr, "Could not parse options\r\n");
         return EXIT_FAILURE;
     }
@@ -122,26 +143,27 @@ int main(int argc, char **argv){
         }
     } 
 
-    struct sigaction sa = { .sa_handler = sigHandler };
     sigaction(SIGHUP, &sa, NULL);
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGTERM, &sa, NULL);
 
     while (running){
+        time_t now;
         pthread_mutex_lock(&lock);
         unsigned int count = reflections;
-        reflections = 0;
         pthread_mutex_unlock(&lock);
         
-        if (count > 0){
-            if (publishReflections(count) == false){
+        if (difftime(time(&now), lastPublish) > (double)interval){
+            lastPublish = now;
+            if (publishReflections(count - lastCount) == false){
                 fprintf(stderr, "Could not publish single reflection\r\n");
             }
+            lastCount = count;
         }
         if (fake == true){
             onReflection();
         }
-        publishProcess(PUBLISH_INTERVAL_MS);
+        publishProcess(PUBLISH_INTERVAL_YIELD_S);
     }
     
     measurementDestroy();
